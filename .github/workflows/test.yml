@@ -1,0 +1,168 @@
+name: Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '20'
+
+jobs:
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+
+    - name: Install code quality tools
+      run: |
+        python -m pip install --upgrade pip
+        # pbr: bandit==1.7.5's `bandit/__init__.py` does `import pbr.version` at
+        # import time but its wheel metadata doesn't declare pbr, so a clean
+        # install crashes with ModuleNotFoundError on the first invocation.
+        pip install black==23.11.0 isort==5.12.0 flake8==6.1.0 pylint==3.0.3 bandit==1.7.5 pbr
+
+    - name: Run Black formatter check
+      run: |
+        black --check --diff .
+
+    - name: Run isort import check
+      run: |
+        isort --check-only --diff .
+
+    - name: Run flake8 linter
+      run: |
+        flake8 whiteboxxai_mcp/ tests/ examples/ scripts/ --count --statistics
+
+    - name: Run pylint
+      run: |
+        pylint whiteboxxai_mcp/ --exit-zero --score=yes
+
+    - name: Run security check (Bandit)
+      run: |
+        bandit -r whiteboxxai_mcp/ -c pyproject.toml -f json -o bandit-report.json
+
+    - name: Upload Bandit report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: bandit-security-report
+        path: bandit-report.json
+
+  type-checking:
+    name: Type Checking
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+        pip install mypy==1.7.1
+
+    - name: Run mypy
+      run: |
+        mypy whiteboxxai_mcp/
+
+  unit-tests:
+    name: Unit Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+
+    - name: Run unit tests
+      run: |
+        pytest tests/unit -v --cov=whiteboxxai_mcp --cov-report=xml --cov-report=term-missing
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      if: matrix.python-version == '3.11'
+      with:
+        file: ./coverage.xml
+        flags: mcpserver
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  mcp-inspector-snapshot:
+    name: MCP Inspector Tool-List Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: Install package
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+
+    - name: MCP Inspector tool-list regression check
+      run: |
+        python tests/check_mcp_inspector_snapshot.py
+
+  server-json:
+    name: Registry Metadata (server.json)
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Validate server.json and version consistency
+      run: |
+        python -m pip install --upgrade pip
+        pip install jsonschema
+        python scripts/check_server_json.py
