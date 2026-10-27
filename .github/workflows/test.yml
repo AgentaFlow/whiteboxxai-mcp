@@ -9,7 +9,9 @@ on:
 
 env:
   PYTHON_VERSION: '3.11'
-  NODE_VERSION: '20'
+  # Inspector 2.x requires Node >=22.19; on older Node, npx silently falls back
+  # to the 0.15.0 build, which can't drive this server ("Connection closed").
+  NODE_VERSION: '22'
 
 jobs:
   code-quality:
@@ -143,20 +145,6 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -e .
-
-    - name: TEMP debug server startup
-      continue-on-error: true
-      run: |
-        set +e
-        which whiteboxxai-mcp; head -1 "$(which whiteboxxai-mcp)"
-        echo '--- direct, stdin closed'
-        WHITEBOXXAI_MCP_API_KEY=dummy whiteboxxai-mcp </dev/null; echo "exit=$?"
-        echo '--- restricted env (like the Inspector spawn)'
-        env -i HOME="$HOME" PATH="$PATH" WHITEBOXXAI_MCP_API_KEY=dummy whiteboxxai-mcp </dev/null; echo "exit=$?"
-        echo '--- initialize handshake'
-        printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"dbg","version":"0"}}}' | WHITEBOXXAI_MCP_API_KEY=dummy timeout 20 whiteboxxai-mcp; echo "exit=$?"
-        echo '--- pip list'
-        pip list 2>/dev/null | grep -i "^mcp \|whitebox\|starlette\|pydantic \|httpx "
 
     - name: MCP Inspector tool-list regression check
       run: |

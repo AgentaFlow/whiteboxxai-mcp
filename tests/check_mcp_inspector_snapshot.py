@@ -32,6 +32,10 @@ from pathlib import Path
 
 SNAPSHOT_PATH = Path(__file__).parent / "mcp_inspector_snapshot.json"
 DUMMY_API_KEY = "wbx_ci_dummy_never_used_for_real_calls"
+# Pinned: the snapshot is the Inspector's own tools/list output, so a floating
+# version can change it (or, on older Node, resolve to a build that can't run).
+# Needs Node >=22.19. Bump deliberately and regenerate with --write.
+INSPECTOR_VERSION = "2.12.0"
 
 
 def _find_whiteboxxai_mcp() -> str:
@@ -54,7 +58,7 @@ def _fetch_tools() -> list[dict]:
         [
             "npx",
             "--yes",
-            "@modelcontextprotocol/inspector",
+            f"@modelcontextprotocol/inspector@{INSPECTOR_VERSION}",
             "--cli",
             server_cmd,
             "-e",
