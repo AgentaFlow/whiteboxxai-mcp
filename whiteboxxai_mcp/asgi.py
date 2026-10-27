@@ -30,27 +30,48 @@ from whiteboxxai_mcp.config import MCPSettings
 from whiteboxxai_mcp.server import build_server
 
 _BEARER_PREFIX = "bearer "
+_API_KEY_HEADER = b"x-whitebox-api-key"
+_AUTH_HEADER = b"authorization"
 
 
-def _extract_bearer_token(scope: Scope) -> str | None:
-    """Read the raw JWT out of an ASGI http scope's Authorization header.
+def _extract_auth_token(scope: Scope) -> str | None:
+    """Read credential from X-WhiteBox-API-Key or Authorization: Bearer.
 
-    Returns None for a missing header, a non-Bearer scheme, or an empty
-    token -- all of which the caller must treat as "reject", not "fall back
-    to something else".
+    Priority:
+    1. Dedicated X-WhiteBox-API-Key header (issue #930, Smithery/proxy gateway friendly).
+       Raw string value is the API key.
+    2. Authorization: Bearer <token>.
+
+    Returns None for missing headers, a non-Bearer Authorization scheme,
+    or an empty token -- all of which the caller must treat as 401 "reject".
     """
     headers = dict(scope.get("headers") or [])
-    raw = headers.get(b"authorization")
-    if not raw:
+
+    # 1. Dedicated API key header (preferred when present, avoids gateway OAuth collisions)
+    raw_api_key = headers.get(_API_KEY_HEADER)
+    if raw_api_key:
+        try:
+            token = raw_api_key.decode("latin-1").strip()
+            if token:
+                return token
+        except UnicodeDecodeError:
+            pass
+
+    # 2. Authorization: Bearer <token>
+    raw_auth = headers.get(_AUTH_HEADER)
+    if not raw_auth:
         return None
     try:
-        text = raw.decode("latin-1")
+        text = raw_auth.decode("latin-1")
     except UnicodeDecodeError:
         return None
     if not text.lower().startswith(_BEARER_PREFIX):
         return None
     token = text[len(_BEARER_PREFIX) :].strip()
     return token or None
+
+
+_extract_bearer_token = _extract_auth_token
 
 
 class _AuthGateApp:
@@ -67,8 +88,8 @@ class _AuthGateApp:
     tokens, but a transport-level rejection is the right shape to copy.
 
     No JWT signature/shape validation happens here beyond "is there a
-    Bearer-prefixed non-empty string" -- real verification is already the
-    backend's job on each tool's own outbound SDK call.
+    Bearer-prefixed non-empty string or raw X-WhiteBox-API-Key" -- real verification
+    is already the backend's job on each tool's own outbound SDK call.
     """
 
     def __init__(self, inner_app: ASGIApp, fastmcp: FastMCP, base_url: str) -> None:
@@ -81,20 +102,21 @@ class _AuthGateApp:
             await self._inner_app(scope, receive, send)
             return
 
-        token = _extract_bearer_token(scope)
+        token = _extract_auth_token(scope)
         if token is None:
             response = JSONResponse(
                 status_code=401,
                 content={
                     "error": "Unauthorized",
                     "detail": (
-                        "Missing or malformed Authorization header. The "
-                        "WhiteBoxXAI MCP HTTP transport requires "
-                        "'Authorization: Bearer <jwt>' on every request -- "
+                        "Missing or malformed credential. The WhiteBoxXAI MCP HTTP "
+                        "transport requires 'X-WhiteBox-API-Key: <key>' or "
+                        "'Authorization: Bearer <token>' on every request -- "
                         "there is no shared or default credential."
                     ),
                     "status_code": 401,
                 },
+                headers={"WWW-Authenticate": "Bearer"},
             )
             await response(scope, receive, send)
             return

@@ -9,6 +9,9 @@ MCP/SDK versioning and support policy.
 
 ## [Unreleased]
 
+### Added
+- Added support for dedicated `X-WhiteBox-API-Key` header on hosted Streamable HTTP `/mcp/` transport, enabling publishing on Smithery without OAuth conflicts (issue #930).
+
 ### Changed
 - Moved to the standalone `AgentaFlow/whiteboxxai-mcp` repository; the package is now
   licensed MIT and published to PyPI and the MCP Registry from CI.
