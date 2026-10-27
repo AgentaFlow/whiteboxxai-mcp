@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "apiKey": {
+      "type": "string",
+      "title": "WhiteBoxXAI API key",
+      "description": "Generate one in the WhiteBoxXAI dashboard under Settings > API Keys.",
+      "x-from": { "header": "x-api-key" },
+      "x-to": { "header": "X-WhiteBox-API-Key" }
+    }
+  },
+  "required": ["apiKey"]
+}

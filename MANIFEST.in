@@ -1,0 +1,27 @@
+include README.md
+include LICENSE
+include CHANGELOG.md
+include pyproject.toml
+include server.json
+include .gitignore
+
+# GitHub workflows
+recursive-include .github *.yml
+
+# Smithery config schema
+recursive-include smithery *.json
+
+# Examples
+recursive-include examples *.py
+
+# Tests (including the MCP Inspector tool-list snapshot)
+recursive-include tests *.py *.json
+
+# Source package
+recursive-include whiteboxxai_mcp *.py
+
+global-exclude *.py[cod]
+global-exclude __pycache__
+global-exclude *.so
+global-exclude .DS_Store
+global-exclude *.egg-info

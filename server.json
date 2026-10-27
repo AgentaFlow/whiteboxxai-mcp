@@ -1,0 +1,49 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.AgentaFlow/whiteboxxai-mcp",
+  "title": "WhiteBoxXAI",
+  "description": "AI observability, explainability and governance: drift, fairness, ISO 42001, risk register.",
+  "version": "0.3.0",
+  "websiteUrl": "https://whiteboxxai.com",
+  "repository": {
+    "url": "https://github.com/AgentaFlow/whiteboxxai-mcp",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "whiteboxxai-mcp",
+      "version": "0.3.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "WHITEBOXXAI_MCP_API_KEY",
+          "description": "WhiteBoxXAI API key, generated from the dashboard under Settings > API Keys.",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "WHITEBOXXAI_MCP_API_BASE_URL",
+          "description": "Base URL of your WhiteBoxXAI instance.",
+          "default": "https://api.whiteboxxai.com"
+        }
+      ]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://api.whiteboxxai.com/mcp/",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer token: your WhiteBoxXAI API key or personal JWT, as 'Bearer <token>'.",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

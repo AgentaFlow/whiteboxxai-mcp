@@ -1,0 +1,25 @@
+[flake8]
+max-line-length = 88
+
+# Black handles line length (E501) and formatting-related checks (E203, E266,
+# W503, E128). The remaining codes are non-breaking style findings carried
+# over from the monorepo's lint configuration this code was formatted against.
+extend-ignore = E203,E266,E501,W503,F401,F405,F541,F841,C901,E712,E711,E741,E722,E402,F403,E128,F811,B008,D
+
+exclude =
+    .git,
+    __pycache__,
+    build,
+    dist,
+    .venv,
+    venv,
+    *.egg-info,
+    .mypy_cache,
+    .pytest_cache,
+    node_modules
+
+max-complexity = 10
+
+per-file-ignores =
+    __init__.py:F401,F403
+    tests/*:S101
