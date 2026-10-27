@@ -9,6 +9,8 @@ MCP/SDK versioning and support policy.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-27
+
 ### Added
 - Added support for dedicated `X-WhiteBox-API-Key` header on hosted Streamable HTTP `/mcp/` transport, enabling publishing on Smithery without OAuth conflicts (issue #930).
 

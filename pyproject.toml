@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "whiteboxxai-mcp"
-version = "0.3.0"
+version = "0.3.1"
 description = "MCP (Model Context Protocol) server exposing WhiteBoxXAI observability/explainability capabilities to agentic AI clients"
 readme = "README.md"
 authors = [
