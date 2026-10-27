@@ -38,9 +38,15 @@
       "url": "https://api.whiteboxxai.com/mcp/",
       "headers": [
         {
+          "name": "X-WhiteBox-API-Key",
+          "description": "WhiteBoxXAI API key (raw value), required for Smithery and gateway proxying.",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
           "name": "Authorization",
           "description": "Bearer token: your WhiteBoxXAI API key or personal JWT, as 'Bearer <token>'.",
-          "isRequired": true,
+          "isRequired": false,
           "isSecret": true
         }
       ]
